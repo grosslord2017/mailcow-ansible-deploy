@@ -1,0 +1,52 @@
+#---
+- name: Prepearing VM to work
+  hosts: testUbuntu
+  become: yes
+  become_method: sudo
+  become_user: root
+  gather_facts: no
+
+  tasks:
+
+    - name: Upadate and Upgrade server
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Installing base utilites
+      ansible.builtin.apt:
+        name:
+          - mc
+          - htop
+          - curl
+          - ufw
+        state: present
+        update_cache: yes
+
+    - name: Open SSH port
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Open ports to Mailcow
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+      loop:
+        - { port: '80' }    # HTTP
+        - { port: '443' }   # HTTPS
+        - { port: '25' }    # SMTP
+        - { port: '465' }   # SMTPS
+        - { port: '587' }   # Submission
+        - { port: '993' }   # IMAPS
+        - { port: '995' }   # POP3S
+        - { port: '143' }   # IMAP
+        - { port: '110' }   # POP3
+        - { port: '4190' }  # Sieve
+        - { port: '12345' } # additional port for other services
+
+    - name: Enabled UFW
+      community.general.ufw:
+        state: enabled
+        policy: allow

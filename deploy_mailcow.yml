@@ -1,0 +1,36 @@
+#---
+- name: Deploy mailcow
+  hosts: testUbuntu
+  become: yes
+
+  tasks:
+
+    - name: Installing git
+      ansible.builtin.apt:
+        name: git
+        state: present
+
+    - name: Check if mailcow directoy exists
+      ansible.builtin.stat:
+        path: /opt/mailcow-dockerized
+      register: mailcow_dir
+
+    - name: Clonning mailcow repository
+      ansible.builtin.git:
+        repo: 'https://github.com/mailcow/mailcow-dockerized'
+        dest: /opt/mailcow-dockerized
+        version: master
+      when: not mailcow_dir.stat.exists
+
+    - name: Generating configure (generate_config.sh)
+      ansible.builtin.shell: |
+        printf "mail.domain.ck.ua\nEurope/Kyiv\ny\nn\n" | ./generate_config.sh
+      args:
+        chdir: /opt/mailcow-dockerized
+        creates: /opt/mailcow-dockerized/mailcow.conf
+
+    - name: Start mailcow (docker-compose up)
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /opt/mailcow-dockerized
+      changed_when: false

@@ -1,0 +1,4 @@
+---
+- import_playbook: update_and_install.yml
+- import_playbook: install_docker.yml
+- import_playbook: deploy_mailcow.yml
